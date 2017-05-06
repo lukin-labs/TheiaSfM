@@ -327,41 +327,6 @@ ContinuousReconstructionBuilderOptions SetReconstructionBuilderOptions() {
     return options;
 }
 
-void AddMatchesToReconstructionBuilder(
-        ContinuousReconstructionBuilder *reconstruction_builder) {
-    // Load matches from file.
-    std::vector<std::string> image_files;
-    std::vector<theia::CameraIntrinsicsPrior> camera_intrinsics_prior;
-    std::vector<theia::ImagePairMatch> image_matches;
-
-    // Read in match file.
-    theia::ReadMatchesAndGeometry(FLAGS_matches_file,
-                                  &image_files,
-                                  &camera_intrinsics_prior,
-                                  &image_matches);
-
-    // Add all the views. When the intrinsics group id is invalid, the
-    // reconstruction builder will assume that the view does not share its
-    // intrinsics with any other views.
-    theia::CameraIntrinsicsGroupId intrinsics_group_id =
-            theia::kInvalidCameraIntrinsicsGroupId;
-    if (FLAGS_shared_calibration) {
-        intrinsics_group_id = 0;
-    }
-
-    for (int i = 0; i < image_files.size(); i++) {
-        reconstruction_builder->AddImageWithCameraIntrinsicsPrior(
-                image_files[i], camera_intrinsics_prior[i], intrinsics_group_id);
-    }
-
-    // Add the matches.
-    for (const auto &match : image_matches) {
-        CHECK(reconstruction_builder->AddTwoViewMatch(match.image1,
-                                                      match.image2,
-                                                      match));
-    }
-}
-
 void AddImagesToReconstructionBuilder(
         ContinuousReconstructionBuilder *reconstruction_builder) {
     std::vector<std::string> image_files;
@@ -403,38 +368,6 @@ void AddImagesToReconstructionBuilder(
         }
     }
 
-    // Add black and write image masks for any images if those are provided.
-    // The white part of the mask indicates the area for the keypoints extraction.
-    // The mask is a basic black and white image (jpg, png, tif etc.), where white
-    // is 1.0 and black is 0.0. Its name must content the associated image's name
-    // (e.g. 'image0001_mask.jpg' is the mask of 'image0001.png').
-    std::vector<std::string> mask_files;
-    if (FLAGS_image_masks.size() != 0) {
-        CHECK(theia::GetFilepathsFromWildcard(FLAGS_image_masks, &mask_files))
-        << "Could not find image masks that matched the filepath: "
-        << FLAGS_image_masks
-        << ". NOTE that the ~ filepath is not supported.";
-        if (mask_files.size() > 0) {
-            for (const std::string &image_file : image_files) {
-                std::string image_filename;
-                CHECK(theia::GetFilenameFromFilepath(image_file,
-                                                     false,
-                                                     &image_filename));
-                // Find and add the associated mask
-                for (const std::string &mask_file : mask_files) {
-                    if (mask_file.find(image_filename) != std::string::npos) {
-                        CHECK(reconstruction_builder->AddMaskForFeaturesExtraction(
-                                image_file,
-                                mask_file));
-                        break;
-                    }
-                }
-            }
-        } else {
-            LOG(WARNING) << "No image masks found in: " << FLAGS_image_masks;
-        }
-    }
-
     // Extract and match features.
     CHECK(reconstruction_builder->ExtractAndMatchFeatures());
 }
@@ -450,10 +383,8 @@ int main(int argc, char *argv[]) {
             SetReconstructionBuilderOptions();
 
     ContinuousReconstructionBuilder reconstruction_builder(options);
-    // If matches are provided, load matches otherwise load images.
-    if (FLAGS_matches_file.size() != 0) {
-        AddMatchesToReconstructionBuilder(&reconstruction_builder);
-    } else if (FLAGS_images.size() != 0) {
+
+    if (FLAGS_images.size() != 0) {
         AddImagesToReconstructionBuilder(&reconstruction_builder);
     } else {
         LOG(FATAL)

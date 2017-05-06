@@ -189,26 +189,6 @@ namespace theia {
                                                         camera_intrinsics_prior);
     }
 
-    void ContinuousReconstructionBuilder::RemoveUncalibratedViews() {
-        const auto &view_ids = reconstruction_->ViewIds();
-        for (const ViewId view_id : view_ids) {
-            const View *view = reconstruction_->View(view_id);
-            if (!view->CameraIntrinsicsPrior().focal_length.is_set) {
-                reconstruction_->RemoveView(view_id);
-                view_graph_->RemoveView(view_id);
-            }
-        }
-    }
-
-    bool ContinuousReconstructionBuilder::AddMaskForFeaturesExtraction(
-            const std::string &image_filepath,
-            const std::string &mask_filepath) {
-        feature_extractor_and_matcher_->AddMaskForFeaturesExtraction(
-                image_filepath,
-                mask_filepath);
-        return true;
-    }
-
     bool ContinuousReconstructionBuilder::ExtractAndMatchFeatures() {
         CHECK_EQ(view_graph_->NumViews(), 0) << "Cannot call ExtractAndMatchFeatures "
                     "after TwoViewMatches has been "
@@ -317,12 +297,6 @@ namespace theia {
         // Build tracks if they were not explicitly specified.
         if (reconstruction_->NumTracks() == 0) {
             track_builder_->BuildTracks(reconstruction_.get());
-        }
-
-        // Remove uncalibrated views from the reconstruction and view graph.
-        if (options_.only_calibrated_views) {
-            LOG(INFO) << "Removing uncalibrated views.";
-            RemoveUncalibratedViews();
         }
 
         while (reconstruction_->NumViews() > 1) {

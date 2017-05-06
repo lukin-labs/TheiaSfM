@@ -39,7 +39,7 @@ namespace theia {
 
         // Number of threads used. Each stage of the pipeline (feature extraction,
         // matching, estimation, etc.) will use this number of threads.
-        int num_threads = 1;
+        int num_threads = 2;
 
         // By default, the ReconstructionBuilder will attempt to reconstruct as many
         // models as possible from the input data. If set to true, only the largest
@@ -126,11 +126,8 @@ namespace theia {
                              const std::string &image2,
                              const ImagePairMatch &matches);
 
-        // Assignes a mask to an image to indicate the area for keypoints extraction.
-        bool AddMaskForFeaturesExtraction(const std::string &image_filepath,
-                                          const std::string &mask_filepath);
-
         // Extracts features and performs matching with geometric verification.
+        // Performs this action for all added files that are not yet computed.
         bool ExtractAndMatchFeatures();
 
         // Initializes the reconstruction and view graph explicitly. This method
@@ -148,6 +145,7 @@ namespace theia {
         // to the output vector and we estimate a reconstruction from the remaining
         // unestimated views. We repeat this process until no more views can be
         // successfully estimated.
+        // Can be called after evry addition of the images.
         bool BuildReconstruction(std::vector<Reconstruction *> *reconstructions);
 
     private:
@@ -161,9 +159,6 @@ namespace theia {
         void AddTracksForMatch(const ViewId view_id1,
                                const ViewId view_id2,
                                const ImagePairMatch &image_matches);
-
-        // Removes all uncalibrated views from the reconstruction and view graph.
-        void RemoveUncalibratedViews();
 
         ContinuousReconstructionBuilderOptions options_;
 
