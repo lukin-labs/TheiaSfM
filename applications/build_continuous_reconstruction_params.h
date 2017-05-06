@@ -5,7 +5,6 @@
 #ifndef THEIA_BUILD_CONTINUOUS_RECONSTRUCTION_PARAMS_H
 #define THEIA_BUILD_CONTINUOUS_RECONSTRUCTION_PARAMS_H
 
-
 #include "applications/command_line_helpers.h"
 
 // Input/output files.
@@ -182,14 +181,14 @@ DEFINE_int32(min_num_optimized_tracks_per_view, 100,
                      "each view observes a minimum number of optimized tracks.");
 
 using theia::Reconstruction;
-using theia::ReconstructionBuilder;
-using theia::ReconstructionBuilderOptions;
+using theia::ContinuousReconstructionBuilder;
+using theia::ContinuousReconstructionBuilderOptions;
 
 // Sets the feature extraction, matching, and reconstruction options based on
 // the command line flags. There are many more options beside just these located
 // in //theia/vision/sfm/reconstruction_builder.h
-ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
-    ReconstructionBuilderOptions options;
+ContinuousReconstructionBuilderOptions SetReconstructionBuilderOptions() {
+    ContinuousReconstructionBuilderOptions options;
     options.num_threads = FLAGS_num_threads;
     options.output_matches_file = FLAGS_output_matches_file;
 
