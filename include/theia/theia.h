@@ -170,6 +170,7 @@
 #include "theia/sfm/pose_error.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_builder.h"
+#include "theia/sfm/continuous_reconstruction_builder.h"
 #include "theia/sfm/reconstruction_estimator.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
 #include "theia/sfm/reconstruction_estimator_utils.h"
