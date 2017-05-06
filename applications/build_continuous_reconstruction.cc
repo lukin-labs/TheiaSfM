@@ -211,14 +211,14 @@ DEFINE_int32(min_num_optimized_tracks_per_view, 100,
                      "each view observes a minimum number of optimized tracks.");
 
 using theia::Reconstruction;
-using theia::ReconstructionBuilder;
-using theia::ReconstructionBuilderOptions;
+using theia::ContinuousReconstructionBuilder;
+using theia::ContinuousReconstructionBuilderOptions;
 
 // Sets the feature extraction, matching, and reconstruction options based on
 // the command line flags. There are many more options beside just these located
 // in //theia/vision/sfm/reconstruction_builder.h
-ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
-    ReconstructionBuilderOptions options;
+ContinuousReconstructionBuilderOptions SetReconstructionBuilderOptions() {
+    ContinuousReconstructionBuilderOptions options;
     options.num_threads = FLAGS_num_threads;
     options.output_matches_file = FLAGS_output_matches_file;
 
@@ -328,7 +328,7 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
 }
 
 void AddMatchesToReconstructionBuilder(
-        ReconstructionBuilder *reconstruction_builder) {
+        ContinuousReconstructionBuilder *reconstruction_builder) {
     // Load matches from file.
     std::vector<std::string> image_files;
     std::vector<theia::CameraIntrinsicsPrior> camera_intrinsics_prior;
@@ -363,7 +363,7 @@ void AddMatchesToReconstructionBuilder(
 }
 
 void AddImagesToReconstructionBuilder(
-        ReconstructionBuilder *reconstruction_builder) {
+        ContinuousReconstructionBuilder *reconstruction_builder) {
     std::vector<std::string> image_files;
     CHECK(theia::GetFilepathsFromWildcard(FLAGS_images, &image_files))
     << "Could not find images that matched the filepath: " << FLAGS_images
@@ -446,10 +446,10 @@ int main(int argc, char *argv[]) {
     CHECK_GT(FLAGS_output_reconstruction.size(), 0)
         << "Must specify a filepath to output the reconstruction.";
 
-    const ReconstructionBuilderOptions options =
+    const ContinuousReconstructionBuilderOptions options =
             SetReconstructionBuilderOptions();
 
-    ReconstructionBuilder reconstruction_builder(options);
+    ContinuousReconstructionBuilder reconstruction_builder(options);
     // If matches are provided, load matches otherwise load images.
     if (FLAGS_matches_file.size() != 0) {
         AddMatchesToReconstructionBuilder(&reconstruction_builder);
