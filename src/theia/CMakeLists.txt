@@ -184,7 +184,7 @@ set(THEIA_LIBRARY_DEPENDENCIES
 
 set(THEIA_LIBRARY_SOURCE
   ${THEIA_SRC}
-  ${THEIA_HDRS})
+        ${THEIA_HDRS} sfm/continuous_reconstruction_builder.cpp sfm/continuous_reconstruction_builder.h)
 
 add_library(theia ${THEIA_LIBRARY_SOURCE})
 set_target_properties(theia PROPERTIES
