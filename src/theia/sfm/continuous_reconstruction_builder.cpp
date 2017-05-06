@@ -12,7 +12,7 @@
 #include "theia/io/write_matches.h"
 #include "theia/matching/image_pair_match.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/feature_extractor_and_matcher.h"
+#include "theia/sfm/continuous_feature_extractor_and_matcher.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator.h"
 #include "theia/sfm/track_builder.h"
@@ -129,7 +129,7 @@ namespace theia {
                 new TrackBuilder(options.min_track_length, options.max_track_length));
 
         // Set up feature extraction and matching.
-        FeatureExtractorAndMatcher::Options feam_options;
+        ContinuousFeatureExtractorAndMatcher::Options feam_options;
         feam_options.num_threads = options_.num_threads;
         feam_options.only_calibrated_views = options_.only_calibrated_views;
         feam_options.num_threads = options_.num_threads;
@@ -145,7 +145,7 @@ namespace theia {
                 .estimate_twoview_info_options.rng = options_.rng;
 
         feature_extractor_and_matcher_.reset(
-                new FeatureExtractorAndMatcher(feam_options));
+                new ContinuousFeatureExtractorAndMatcher(feam_options));
     }
 
     ContinuousReconstructionBuilder::~ContinuousReconstructionBuilder() {}
@@ -215,7 +215,7 @@ namespace theia {
 
         // Log how many view pairs were geometrically verified.
         const int num_total_view_pairs =
-                image_filepaths_.size() * (image_filepaths_.size() - 1) / 2;
+                (int) (image_filepaths_.size() * (image_filepaths_.size() - 1) / 2);
         LOG(INFO) << matches.size() << " of " << num_total_view_pairs
                   << " view pairs were matched and geometrically verified.";
 

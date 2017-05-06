@@ -18,7 +18,7 @@
 #include "theia/util/util.h"
 
 namespace theia {
-    class FeatureExtractorAndMatcher;
+    class ContinuousFeatureExtractorAndMatcher;
 
     class RandomNumberGenerator;
 
@@ -171,7 +171,7 @@ namespace theia {
         std::vector<std::string> image_filepaths_;
 
         // Module for performing feature extraction and matching.
-        std::unique_ptr<FeatureExtractorAndMatcher> feature_extractor_and_matcher_;
+        std::unique_ptr<ContinuousFeatureExtractorAndMatcher> feature_extractor_and_matcher_;
 
         DISALLOW_COPY_AND_ASSIGN(ContinuousReconstructionBuilder);
     };
