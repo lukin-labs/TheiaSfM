@@ -20,7 +20,7 @@ DEFINE_string(
                 "future iterations as input to the reconstruction builder. Leave empty if "
                 "you do not want to output matches.");
 DEFINE_string(
-        output_reconstruction, "",
+        output_reconstruction, "/home/maciek/Datasets/mobile_floor_2fps/results/rec",
         "Filename to write reconstruction to. The filename will be appended with "
                 "the reconstruction number if multiple reconstructions are created.");
 
