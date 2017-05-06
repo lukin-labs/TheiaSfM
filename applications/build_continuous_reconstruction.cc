@@ -36,39 +36,40 @@
 #include <theia/theia.h>
 #include "build_continuous_reconstruction_params.h"
 
-void AddImagesToReconstructionBuilder(
-        ContinuousReconstructionBuilder *reconstruction_builder) {
-    std::vector<std::string> image_files;
-    CHECK(theia::GetFilepathsFromWildcard(FLAGS_images, &image_files))
+using namespace std;
+using namespace theia;
+
+vector<string> getImages() {
+    vector<string> image_files;
+    CHECK(GetFilepathsFromWildcard(FLAGS_images, &image_files))
     << "Could not find images that matched the filepath: " << FLAGS_images
     << ". NOTE that the ~ filepath is not supported.";
-
     CHECK_GT(image_files.size(), 0) << "No images found in: " << FLAGS_images;
-    std::sort(image_files.begin(), image_files.end());
+    sort(image_files.begin(), image_files.end());
+    return image_files;
+}
 
-    // Load calibration file if it is provided.
-    std::unordered_map<std::string, theia::CameraIntrinsicsPrior>
-            camera_intrinsics_prior;
+unordered_map<string, CameraIntrinsicsPrior> getCalibration() {
+    unordered_map<std::string, CameraIntrinsicsPrior> camera_intrinsics_prior;
     if (FLAGS_calibration_file.size() != 0) {
-        CHECK(theia::ReadCalibration(FLAGS_calibration_file,
-                                     &camera_intrinsics_prior))
+        CHECK(ReadCalibration(FLAGS_calibration_file, &camera_intrinsics_prior))
         << "Could not read calibration file.";
     }
+    return camera_intrinsics_prior;
+};
 
-    // Add images with possible calibration. When the intrinsics group id is
-    // invalid, the reconstruction builder will assume that the view does not
-    // share its intrinsics with any other views.
-    theia::CameraIntrinsicsGroupId intrinsics_group_id =
-            theia::kInvalidCameraIntrinsicsGroupId;
-    if (FLAGS_shared_calibration) {
-        intrinsics_group_id = 0;
-    }
+void AddImagesToReconstructionBuilder(ContinuousReconstructionBuilder *reconstruction_builder,
+                                      vector<string> image_files,
+                                      unordered_map<string, CameraIntrinsicsPrior> camera_intrinsics_prior) {
 
-    for (const std::string &image_file : image_files) {
-        std::string image_filename;
-        CHECK(theia::GetFilenameFromFilepath(image_file, true, &image_filename));
+    theia::CameraIntrinsicsGroupId intrinsics_group_id = theia::kInvalidCameraIntrinsicsGroupId;
+    intrinsics_group_id = 0;
 
-        const theia::CameraIntrinsicsPrior *image_camera_intrinsics_prior =
+    for (const string &image_file : image_files) {
+        string image_filename;
+        CHECK(GetFilenameFromFilepath(image_file, true, &image_filename));
+
+        const CameraIntrinsicsPrior *image_camera_intrinsics_prior =
                 FindOrNull(camera_intrinsics_prior, image_filename);
         if (image_camera_intrinsics_prior != nullptr) {
             CHECK(reconstruction_builder->AddImageWithCameraIntrinsicsPrior(
@@ -77,9 +78,14 @@ void AddImagesToReconstructionBuilder(
             CHECK(reconstruction_builder->AddImage(image_file, intrinsics_group_id));
         }
     }
-
     // Extract and match features.
     CHECK(reconstruction_builder->ExtractAndMatchFeatures());
+}
+
+vector<string> getNextImages(vector<string> file_names, vector<string>::iterator &it, int amount) {
+    vector<string> new_file_names(it, it + amount);
+    it += amount;
+    return new_file_names;
 }
 
 int main(int argc, char *argv[]) {
@@ -92,14 +98,14 @@ int main(int argc, char *argv[]) {
     const ContinuousReconstructionBuilderOptions options =
             SetReconstructionBuilderOptions();
 
+    vector<string> all_files = getImages();
+    vector<string>::iterator it = all_files.begin();
+    unordered_map<string, CameraIntrinsicsPrior> calibration = getCalibration();
+
     ContinuousReconstructionBuilder reconstruction_builder(options);
-    // If matches are provided, load matches otherwise load images.
-    if (FLAGS_images.size() != 0) {
-        AddImagesToReconstructionBuilder(&reconstruction_builder);
-    } else {
-        LOG(FATAL)
-                << "You must specifiy either images to reconstruct or a match file.";
-    }
+
+    vector<string> images = getNextImages(all_files, it, 5);
+    AddImagesToReconstructionBuilder(&reconstruction_builder, images, calibration);
 
     std::vector<Reconstruction *> reconstructions;
     CHECK(reconstruction_builder.BuildReconstruction(&reconstructions))
