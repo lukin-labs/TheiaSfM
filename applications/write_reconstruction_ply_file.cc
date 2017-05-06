@@ -36,8 +36,9 @@
 #include <gflags/gflags.h>
 #include <theia/theia.h>
 
-DEFINE_string(reconstruction, "", "Theia Reconstruction file.");
-DEFINE_string(ply_file, "", "Output PLY file.");
+DEFINE_string(reconstruction, "/home/maciek/Datasets/mobile_floor_2fps/results/rec-color-0",
+              "Theia Reconstruction file.");
+DEFINE_string(ply_file, "/home/maciek/Datasets/mobile_floor_2fps/results/ply.ply", "Output PLY file.");
 DEFINE_int32(min_num_observations_per_point, 3,
              "Minimum number of observations for a point to be written out to "
              "the PLY file. This helps reduce noise in the resulty PLY file.");

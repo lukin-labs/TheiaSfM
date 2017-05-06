@@ -39,11 +39,13 @@
 
 #include <string>
 
-DEFINE_string(image_directory, "",
+DEFINE_string(image_directory, "/home/maciek/Datasets/mobile_floor_2fps/",
               "Full path to the directory containing the images used to create "
               "the reconstructions. Must contain a trailing slash.");
-DEFINE_string(input_reconstruction_file, "", "Input reconstruction file.");
-DEFINE_string(output_reconstruction_file, "", "Output reconstruction file.");
+DEFINE_string(input_reconstruction_file, "/home/maciek/Datasets/mobile_floor_2fps/results/rec-0",
+              "Input reconstruction file.");
+DEFINE_string(output_reconstruction_file, "/home/maciek/Datasets/mobile_floor_2fps/results/rec-color-0",
+              "Output reconstruction file.");
 DEFINE_int32(num_threads, 1, "Number of threads to use for multithreading.");
 
 int main(int argc, char* argv[]) {

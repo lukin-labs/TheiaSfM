@@ -24,20 +24,20 @@ DEFINE_string(
                 "the reconstruction number if multiple reconstructions are created.");
 
 // Multithreading.
-DEFINE_int32(num_threads, 2,
+DEFINE_int32(num_threads, 4,
              "Number of threads to use for feature extraction and matching.");
 
 // Feature and matching options.
 DEFINE_string(descriptor, "SIFT",
               "Type of feature descriptor to use. Must be one of the following: "
                       "SIFT");
-DEFINE_string(feature_density, "NORMAL",
+DEFINE_string(feature_density, "DENSE",
               "Set to SPARSE, NORMAL, or DENSE to extract fewer or more "
                       "features from each image.");
 DEFINE_string(matching_strategy, "CASCADE_HASHING",
               "Strategy used to match features. Must be BRUTE_FORCE "
                       " or CASCADE_HASHING");
-DEFINE_bool(match_out_of_core, true,
+DEFINE_bool(match_out_of_core, false,
             "Perform matching out of core by saving features to disk and "
                     "reading them as needed. Set to false to perform matching all in "
                     "memory.");
