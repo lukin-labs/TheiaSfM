@@ -18,6 +18,9 @@ target_link_libraries(calibrate_camera_intrinsics theia ${GFLAGS_LIBRARIES} ${GL
 add_executable(undistort_images undistort_images.cc)
 target_link_libraries(undistort_images theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
 
+add_executable(build_continuous_reconstruction build_continuous_reconstruction.cc)
+target_link_libraries(build_continuous_reconstruction theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
+
 # Reconstruction visualization.
 find_package(OpenGL REQUIRED)
 if (NOT MSVC)
