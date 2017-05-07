@@ -190,9 +190,9 @@ namespace theia {
     }
 
     bool ContinuousReconstructionBuilder::ExtractAndMatchFeatures() {
-        CHECK_EQ(view_graph_->NumViews(), 0) << "Cannot call ExtractAndMatchFeatures "
+        /*CHECK_EQ(view_graph_->NumViews(), 0) << "Cannot call ExtractAndMatchFeatures "
                     "after TwoViewMatches has been "
-                    "called.";
+                    "called.";*/
 
         // Extract features and obtain the feature matches.
         std::vector<ImagePairMatch> matches;

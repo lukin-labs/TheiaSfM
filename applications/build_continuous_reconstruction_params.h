@@ -41,7 +41,7 @@ DEFINE_bool(match_out_of_core, false,
             "Perform matching out of core by saving features to disk and "
                     "reading them as needed. Set to false to perform matching all in "
                     "memory.");
-DEFINE_string(matching_working_directory, "",
+DEFINE_string(matching_working_directory, "/home/maciek/Datasets/mobile_floor_2fps/matches/",
               "Directory used during matching to store features for "
                       "out-of-core matching.");
 DEFINE_int32(matching_max_num_images_in_cache, 128,

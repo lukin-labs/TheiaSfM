@@ -107,6 +107,9 @@ int main(int argc, char *argv[]) {
     vector<string> images = getNextImages(all_files, it, 5);
     AddImagesToReconstructionBuilder(&reconstruction_builder, images, calibration);
 
+    images = getNextImages(all_files, it, 5);
+    AddImagesToReconstructionBuilder(&reconstruction_builder, images, calibration);
+
     std::vector<Reconstruction *> reconstructions;
     CHECK(reconstruction_builder.BuildReconstruction(&reconstructions))
     << "Could not create a reconstruction.";

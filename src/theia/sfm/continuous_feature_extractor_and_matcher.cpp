@@ -133,15 +133,35 @@ namespace theia {
                 continue;
             }
             // Check if image is already added
-            if (!matcher_->Contains(image_filepaths_[i]))
+            std::string image_filename;
+            CHECK(GetFilenameFromFilepath(image_filepaths_[i], true, &image_filename));
+            if (!matcher_->Contains(image_filename)) {
                 ContinuousFeatureExtractorAndMatcher::ProcessImage(i);
-            new_files.push_back(image_filepaths_[i]);
+                new_files.push_back(image_filepaths_[i]);
+            }
         }
 
         // After all threads complete feature extraction, sellect pairs to be matched.
         //TODO: Select pairs of the images to be matched. Generally should be each new image with all other.
         //      In future should be matched only to nearby images.
-        //matcher_->SetImagePairsToMatch();
+        std::vector<std::pair<std::string, std::string>> pairs;
+        std::vector<std::string>::iterator it = new_files.begin();
+        for (auto new_file : new_files) {
+            for (auto image_path : image_filepaths_) {
+                //Check if image is different than this image and such pair was not yet generated
+                if (image_path != new_file /*&& std::find(new_files.begin(), it, image_path) == it*/) {
+                    // Get the image filename without the directory.
+                    std::string image_filename1, image_filename2;
+                    CHECK(GetFilenameFromFilepath(image_path, true, &image_filename1));
+                    CHECK(GetFilenameFromFilepath(new_file, true, &image_filename2));
+                    std::pair<std::string, std::string> pair(image_filename1, image_filename2);
+                    pairs.push_back(pair);
+                }
+            }
+            //it += 1;
+        }
+
+        matcher_->SetImagePairsToMatch(pairs);
 
         // perform matching.
 
