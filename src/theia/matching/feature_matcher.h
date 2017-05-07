@@ -126,6 +126,9 @@ class FeatureMatcher {
   virtual void SetImagePairsToMatch(
       const std::vector<std::pair<std::string, std::string> >& pairs_to_match);
 
+    //Check if matcher already contains file
+    virtual bool Contains(std::string file_name);
+
  protected:
   // NOTE: This method should be overridden in the subclass implementations!
   // Returns true if the image pair is a valid match.

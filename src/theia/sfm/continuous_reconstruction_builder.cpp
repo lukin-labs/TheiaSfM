@@ -200,25 +200,6 @@ namespace theia {
         feature_extractor_and_matcher_->ExtractAndMatchFeatures(
                 &camera_intrinsics_priors, &matches);
 
-        // If we only want calibrated views remove them from the reconstruction so
-        // that they no features are detected and matched between them.
-        if (options_.only_calibrated_views) {
-            // We iterate in the reverse order so that the erase() function does not
-            // disturb the iterating.
-            for (int i = image_filepaths_.size() - 1; i >= 0; --i) {
-                if (!camera_intrinsics_priors[i].focal_length.is_set) {
-                    image_filepaths_.erase(image_filepaths_.begin() + i);
-                    camera_intrinsics_priors.erase(camera_intrinsics_priors.begin() + i);
-                }
-            }
-        }
-
-        // Log how many view pairs were geometrically verified.
-        const int num_total_view_pairs =
-                (int) (image_filepaths_.size() * (image_filepaths_.size() - 1) / 2);
-        LOG(INFO) << matches.size() << " of " << num_total_view_pairs
-                  << " view pairs were matched and geometrically verified.";
-
         // Add the EXIF data to each view.
         std::vector<std::string> image_filenames(image_filepaths_.size());
         for (int i = 0; i < image_filepaths_.size(); i++) {

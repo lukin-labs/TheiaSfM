@@ -34,7 +34,6 @@ namespace theia {
         void ExtractFeatures(
                 const ContinuousFeatureExtractorAndMatcher::Options &options,
                 const std::string &image_filepath,
-                const std::string &imagemask_filepath,
                 std::vector<Keypoint> *keypoints,
                 std::vector<Eigen::VectorXf> *descriptors) {
             static const float kMaskThreshold = 0.5;
@@ -58,44 +57,14 @@ namespace theia {
                 return;
             }
 
-            if (imagemask_filepath.size() > 0) {
-                std::unique_ptr<FloatImage> image_mask(new FloatImage(imagemask_filepath));
-                // Check the size of the image and its associated mask.
-                CHECK(image_mask->Width() == image->Width() &&
-                      image_mask->Height() == image->Height())
-                << "The image and the mask don't have the same size. \n"
-                << "- Image: " << image_filepath
-                << "\t(" << image->Width() << " x " << image->Height() << ")\n"
-                << "- Mask: " << imagemask_filepath
-                << "\t(" << image_mask->Width() << " x " << image_mask->Height() << ")";
-
-                // Convert the mask to grayscale.
-                image_mask->ConvertToGrayscaleImage();
-                // Remove keypoints according to the associated mask (remove kp. in black
-                // part).
-                for (int i = keypoints->size() - 1; i > -1; i--) {
-                    if (image_mask->BilinearInterpolate(keypoints->at(i).x(),
-                                                        keypoints->at(i).y(),
-                                                        0) < kMaskThreshold) {
-                        keypoints->erase(keypoints->begin() + i);
-                        descriptors->erase(descriptors->begin() + i);
-                    }
-                }
-            }
 
             if (keypoints->size() > options.max_num_features) {
                 keypoints->resize(options.max_num_features);
                 descriptors->resize(options.max_num_features);
             }
+            VLOG(1) << "Successfully extracted " << descriptors->size()
+                    << " features from image " << image_filepath;
 
-            if (imagemask_filepath.size() > 0) {
-                VLOG(1) << "Successfully extracted " << descriptors->size()
-                        << " features from image " << image_filepath
-                        << " with an image mask.";
-            } else {
-                VLOG(1) << "Successfully extracted " << descriptors->size()
-                        << " features from image " << image_filepath;
-            }
         }
 
     }  // namespace
@@ -151,6 +120,9 @@ namespace theia {
         CHECK_NOTNULL(matcher_.get());
 
         // For each image, process the features and add it to the matcher.
+        // Using only one thread to increase stability
+        // In future will be replaced by CUDA implementation
+        std::vector<std::string> new_files;
         const int num_threads =
                 std::min(options_.num_threads, static_cast<int>(image_filepaths_.size()));
         std::unique_ptr<ThreadPool> thread_pool(new ThreadPool(num_threads));
@@ -160,12 +132,18 @@ namespace theia {
                            << " because the file cannot be found.";
                 continue;
             }
-            thread_pool->Add(&ContinuousFeatureExtractorAndMatcher::ProcessImage, this, i);
+            // Check if image is already added
+            if (!matcher_->Contains(image_filepaths_[i]))
+                ContinuousFeatureExtractorAndMatcher::ProcessImage(i);
+            new_files.push_back(image_filepaths_[i]);
         }
-        // This forces all tasks to complete before proceeding.
-        thread_pool.reset(nullptr);
 
-        // After all threads complete feature extraction, perform matching.
+        // After all threads complete feature extraction, sellect pairs to be matched.
+        //TODO: Select pairs of the images to be matched. Generally should be each new image with all other.
+        //      In future should be matched only to nearby images.
+        //matcher_->SetImagePairsToMatch();
+
+        // perform matching.
 
         // Perform the matching.
         LOG(INFO) << "Matching images...";
@@ -184,10 +162,6 @@ namespace theia {
         // Get the camera intrinsics prior if it was provided.
         CameraIntrinsicsPrior intrinsics =
                 FindWithDefault(intrinsics_, image_filepath, CameraIntrinsicsPrior());
-
-        // Get the associated mask if it was provided.
-        const std::string mask_filepath =
-                FindWithDefault(image_masks_, image_filepath, "");
 
         // Extract an EXIF focal length if it was not provided.
         if (!intrinsics.focal_length.is_set) {
@@ -244,7 +218,6 @@ namespace theia {
         std::vector<Eigen::VectorXf> descriptors;
         ExtractFeatures(options_,
                         image_filepath,
-                        mask_filepath,
                         &keypoints,
                         &descriptors);
 
