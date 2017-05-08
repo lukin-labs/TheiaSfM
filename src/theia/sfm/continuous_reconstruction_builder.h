@@ -148,6 +148,9 @@ namespace theia {
         // Can be called after evry addition of the images.
         bool BuildReconstruction(std::vector<Reconstruction *> *reconstructions);
 
+        bool BuildupReconstruction(Reconstruction *reconstruction,
+                                   std::vector<std::string> *new_images_paths);
+
     private:
         // Adds the given matches as edges in the view graph.
         void AddMatchToViewGraph(const ViewId view_id1,

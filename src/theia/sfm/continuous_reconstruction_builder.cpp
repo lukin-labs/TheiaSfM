@@ -296,8 +296,8 @@ namespace theia {
             if (!summary.success) {
                 return reconstructions->size() > 0;
             }
-
-            LOG(INFO)
+            std::cout
+                    //LOG(INFO)
                     << "\nReconstruction estimation statistics: "
                     << "\n\tNum estimated views = " << summary.estimated_views.size()
                     << "\n\tNum input views = " << reconstruction_->NumViews()
@@ -307,8 +307,8 @@ namespace theia {
                     << "\n\tTriangulation time = " << summary.triangulation_time
                     << "\n\tBundle Adjustment time = " << summary.bundle_adjustment_time
                     << "\n\tTotal time = " << summary.total_time
-                    << "\n\n" << summary.message;
-
+                    << "\n\n" << summary.message
+                    << std::endl;
             // Remove estimated views and tracks and attempt to create a reconstruction
             // from the remaining unestimated parts.
             reconstructions->emplace_back(
@@ -326,6 +326,70 @@ namespace theia {
                 return reconstructions->size() > 0;
             }
         }
+        return true;
+    }
+
+    bool ContinuousReconstructionBuilder::BuildupReconstruction(
+            Reconstruction *reconstructions,
+            std::vector<std::string> *new_images_filepath) {
+        CHECK_GE(view_graph_->NumViews(), 2) << "At least 2 images must be provided "
+                    "in order to create a "
+                    "reconstruction.";
+        CHECK_GE(new_images_filepath->size(), 1) << "At least 1 new image must be provided "
+                    " in order to buildup reconstruction.";
+
+        // Build tracks if they were not explicitly specified.
+        if (reconstruction_->NumTracks() == 0 || new_images_filepath->size() != 0) {
+            std::cout << "no tracks" << std::endl;
+            track_builder_->BuildupNewTracks(reconstruction_.get(), new_images_filepath);
+        }
+
+        //while (reconstruction_->NumViews() > 1) {
+        LOG(INFO) << "Attempting to reconstruct " << reconstruction_->NumViews()
+                  << " images from " << view_graph_->NumEdges()
+                  << " two view matches.";
+
+        std::unique_ptr<ReconstructionEstimator> reconstruction_estimator(
+                ReconstructionEstimator::Create(
+                        options_.reconstruction_estimator_options));
+
+        const auto &summary = reconstruction_estimator->Estimate(
+                view_graph_.get(), reconstruction_.get());
+
+        // If a reconstruction can no longer be estimated, return.
+        if (!summary.success) {
+            return false;
+        }
+        std::cout
+                //LOG(INFO)
+                << "\nReconstruction estimation statistics: "
+                << "\n\tNum estimated views = " << summary.estimated_views.size()
+                << "\n\tNum input views = " << reconstruction_->NumViews()
+                << "\n\tNum estimated tracks = " << summary.estimated_tracks.size()
+                << "\n\tNum input tracks = " << reconstruction_->NumTracks()
+                << "\n\tPose estimation time = " << summary.pose_estimation_time
+                << "\n\tTriangulation time = " << summary.triangulation_time
+                << "\n\tBundle Adjustment time = " << summary.bundle_adjustment_time
+                << "\n\tTotal time = " << summary.total_time
+                << "\n\n" << summary.message
+                << std::endl;
+        // Remove estimated views and tracks and attempt to create a reconstruction
+        // from the remaining unestimated parts.
+        //reconstructions->emplace_back(
+        CreateEstimatedSubreconstruction(*reconstruction_);//);
+        //RemoveEstimatedViewsAndTracks(reconstruction_.get(), view_graph_.get());
+
+        // Exit after the first reconstruction estimation if only the single largest
+        // reconstruction is desired.
+        /*if (options_.reconstruct_largest_connected_component) {
+            return reconstructions->size() > 0;
+        }
+
+        if (reconstruction_->NumViews() < 3) {
+            LOG(INFO) << "No more reconstructions can be estimated.";
+            return reconstructions->size() > 0;
+        }*/
+        //}
         return true;
     }
 

@@ -64,7 +64,7 @@ DEFINE_bool(keep_only_symmetric_matches, true,
             "Performs two-way matching and keeps symmetric matches.");
 
 // Reconstruction building options.
-DEFINE_string(reconstruction_estimator, "GLOBAL",
+DEFINE_string(reconstruction_estimator, "INCREMENTAL",
               "Type of SfM reconstruction estimation to use.");
 DEFINE_bool(reconstruct_largest_connected_component, false,
             "If set to true, only the single largest connected component is "

@@ -104,21 +104,23 @@ int main(int argc, char *argv[]) {
 
     ContinuousReconstructionBuilder reconstruction_builder(options);
 
-    vector<string> images = getNextImages(all_files, it, 5);
+    vector<string> images = getNextImages(all_files, it, 15);
     AddImagesToReconstructionBuilder(&reconstruction_builder, images, calibration);
+
+    Reconstruction reconstruction;
+    CHECK(reconstruction_builder.BuildupReconstruction(&reconstruction, &images))
+    << "Could not create a reconstruction.";
 
     images = getNextImages(all_files, it, 5);
     AddImagesToReconstructionBuilder(&reconstruction_builder, images, calibration);
-
-    std::vector<Reconstruction *> reconstructions;
-    CHECK(reconstruction_builder.BuildReconstruction(&reconstructions))
+    CHECK(reconstruction_builder.BuildupReconstruction(&reconstruction, &images))
     << "Could not create a reconstruction.";
 
-    for (int i = 0; i < reconstructions.size(); i++) {
+    /*for (int i = 0; i < reconstructions.size(); i++) {*/
         const std::string output_file =
-                theia::StringPrintf("%s-%d", FLAGS_output_reconstruction.c_str(), i);
-        LOG(INFO) << "Writing reconstruction " << i << " to " << output_file;
-        CHECK(theia::WriteReconstruction(*reconstructions[i], output_file))
+                theia::StringPrintf("%s-%d", FLAGS_output_reconstruction.c_str(), 0);
+    LOG(INFO) << "Writing reconstruction " << 0 << " to " << output_file;
+    CHECK(theia::WriteReconstruction(reconstruction, output_file))
         << "Could not write reconstruction to file.";
-    }
+    //}
 }

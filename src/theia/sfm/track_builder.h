@@ -68,6 +68,7 @@ class TrackBuilder {
   // Generates all tracks and adds them to the reconstruction.
   void BuildTracks(Reconstruction* reconstruction);
 
+    void BuildupNewTracks(Reconstruction *reconstruction, std::vector<std::string> *new_images_filepaths);
  private:
   uint64_t FindOrInsert(const std::pair<ViewId, Feature>& image_feature);
 
