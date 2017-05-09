@@ -314,4 +314,8 @@ void FeatureMatcher::MatchAndVerifyImagePairs(
   }
 }
 
+    bool FeatureMatcher::Contains(std::string file_name) {
+        return (std::find(image_names_.begin(), image_names_.end(), file_name) != image_names_.end());
+    }
+
 }  // namespace theia

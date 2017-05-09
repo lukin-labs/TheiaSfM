@@ -1,29 +1,30 @@
 ############### Input/Output ###############
 # Input as a wildcard e.g., /home/my_username/my_images/*.jpg
---images=
+--images=/home/maciek/Desktop/q/640x480_images/*.png
+--output_calibration_file=/home/maciek/Datasets/calibration_640x480/calibration.txt
 
 # The number of iterations to run the calibration procedure. Typically 2-3
 # iterations is sufficient to obtain a good calibration.
---num_calibration_iterations=2
+--num_calibration_iterations=50
 
 # The type of camera model to use for calibration. The most common camera model
 # types are PINHOLE and FISHEYE but a full list may be found at
 # //theia/sfm/camera/camera_intrinsic_model_type.h
---camera_model=PINHOLE
+--camera_model=PINHOLE_RADIAL_TANGENTIAL
 
 ############### Multithreading ###############
 # Set to the number of threads you want to use.
---num_threads=16
+--num_threads=4
 
 ############### Feature Extraction ###############
 --descriptor=SIFT
---feature_density=NORMAL
+--feature_density=DENSE
 
 ############### Matching Options ###############
 # Perform matching out-of-core. If set to true, the matching_working_directory
 # must be set to a valid, writable directory (the directory will be created if
 # it does not exits) Set to false to perform all-in-memory matching.
---match_out_of_core=true
+--match_out_of_core=false
 
 # During feature matching, features are saved to disk so that out-of-core
 # matching may be performed. This directory specifies which directory those
@@ -35,7 +36,7 @@
 # higher this number the more memory is required.
 --matching_max_num_images_in_cache=128
 
---matching_strategy=CASCADE_HASHING
+--matching_strategy=BRUTE_FORCE
 --lowes_ratio=0.75
 --min_num_inliers_for_valid_match=30
 # NOTE: This threshold is relative to an image with a width of 1024 pixels. It
@@ -71,7 +72,7 @@
 # Set this parameter to change which camera intrinsics should be optimized
 # during the calibration. Typically the focal length and distortion parameters
 # are desired.
---intrinsics_to_optimize=FOCAL_LENGTH|RADIAL_DISTORTION
+--intrinsics_to_optimize=FOCAL_LENGTH|RADIAL_DISTORTION|TANGENTIAL_DISTORTION|PRINCIPAL_POINTS
 
 # After BA, remove any points that have a reprojection error greater
 # than this.

@@ -123,13 +123,69 @@ void TrackBuilder::BuildTracks(Reconstruction* reconstruction) {
         << "Could not build tracks.";
   }
 
-  VLOG(1)
+
+    VLOG(1)
       << reconstruction->NumTracks() << " tracks were created. "
       << num_inconsistent_features
       << " features were dropped because they formed inconsistent tracks, and "
       << num_small_tracks << " features were dropped because they did not have "
                              "enough observations.";
 }
+
+    void TrackBuilder::BuildupNewTracks(Reconstruction *reconstruction, std::vector<std::string> *new_images) {
+        CHECK_NOTNULL(reconstruction);
+
+        // Build a reverse map mapping feature ids to ImageNameFeaturePairs.
+        std::unordered_map<uint64_t, const std::pair<ViewId, Feature> *> id_to_feature;
+        id_to_feature.reserve(features_.size());
+        for (const auto &feature : features_) {
+            InsertOrDie(&id_to_feature, feature.second, &feature.first);
+        }
+
+        // Extract all connected components.
+        std::unordered_map<uint64_t, std::unordered_set<uint64_t> > components;
+        connected_components_->Extract(&components);
+
+        // Each connected component is a track. Add all tracks to the reconstruction.
+        int num_small_tracks = 0;
+        int num_inconsistent_features = 0;
+        for (const auto &component : components) {
+            // Skip singleton tracks.
+            if (component.second.size() < min_track_length_) {
+                ++num_small_tracks;
+                continue;
+            }
+
+            std::vector<std::pair<ViewId, Feature> > track;
+            track.reserve(component.second.size());
+
+            // Add all features in the connected component to the track.
+            std::unordered_set<ViewId> view_ids;
+            for (const auto &feature_id : component.second) {
+                const auto &feature_to_add = *FindOrDie(id_to_feature, feature_id);
+
+                // Do not add the feature if the track already contains a feature from the
+                // same image.
+                if (!InsertIfNotPresent(&view_ids, feature_to_add.first)) {
+                    ++num_inconsistent_features;
+                    continue;
+                }
+
+                track.emplace_back(feature_to_add);
+            }
+
+            CHECK_NE(reconstruction->AddTrack(track), kInvalidTrackId)
+                << "Could not build tracks.";
+        }
+
+
+        VLOG(1)
+        << reconstruction->NumTracks() << " tracks were created. "
+        << num_inconsistent_features
+        << " features were dropped because they formed inconsistent tracks, and "
+        << num_small_tracks << " features were dropped because they did not have "
+                "enough observations.";
+    }
 
 uint64_t TrackBuilder::FindOrInsert(
     const std::pair<ViewId, Feature>& image_feature) {
