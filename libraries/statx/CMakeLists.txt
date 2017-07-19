@@ -113,7 +113,7 @@ endif(STATX_WITH_CERES)
 message("-- Check for Optimo")
 find_path(OPTIMO_INCLUDE_DIR
   NAMES optimo/solvers/bfgs.h
-  PATHS ${CMAKE_SOURCE_DIR}/libraries/optimo /usr/include /usr/local/include)
+  PATHS ${CMAKE_SOURCE_DIR}/deps/TheiaSfM/libraries/optimo /usr/include /usr/local/include)
 
 if(OPTIMO_INCLUDE_DIR)
   message("-- Found optimo headers: ${OPTIMO_INCLUDE_DIR}")
