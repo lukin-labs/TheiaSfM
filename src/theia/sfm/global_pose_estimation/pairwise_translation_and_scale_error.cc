@@ -35,19 +35,27 @@
 #include "theia/sfm/global_pose_estimation/pairwise_translation_and_scale_error.h"
 
 #include <ceres/ceres.h>
+#include <ceres/rotation.h>
 #include <glog/logging.h>
 
 namespace theia {
 
 PairwiseTranslationAndScaleError::PairwiseTranslationAndScaleError(
-    const Eigen::Vector3d& translation_direction)
-    : translation_direction_(translation_direction) {}
+    const Eigen::Vector3d& orientation1,
+    const Eigen::Vector3d& relative_translation) {
+  const Eigen::Vector3d orientation1_transpose = -orientation1;
+  ceres::AngleAxisRotatePoint(orientation1_transpose.data(),
+                              relative_translation.data(),
+                              relative_translation_.data());
+}
 
 ceres::CostFunction* PairwiseTranslationAndScaleError::Create(
-    const Eigen::Vector3d& translation_direction) {
-  return (new ceres::AutoDiffCostFunction<PairwiseTranslationAndScaleError,
-          4, 3, 3, 1>(
-      new PairwiseTranslationAndScaleError(translation_direction)));
+    const Eigen::Vector3d& orientation1,
+    const Eigen::Vector3d& relative_translation) {
+  return (
+      new ceres::AutoDiffCostFunction<PairwiseTranslationAndScaleError, 3, 3, 3,
+                                      1>(new PairwiseTranslationAndScaleError(
+          orientation1, relative_translation)));
 }
 
 }  // namespace theia

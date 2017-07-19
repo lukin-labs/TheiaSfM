@@ -41,68 +41,37 @@
 
 #include "theia/math/l1_solver.h"
 #include "theia/math/matrix/sparse_cholesky_llt.h"
+#include "theia/math/rotation.h"
 #include "theia/math/util.h"
 #include "theia/sfm/types.h"
 #include "theia/util/hash.h"
 #include "theia/util/map_util.h"
 
 namespace theia {
-namespace {
-
-// Computes the relative rotation error from the global rotations to the
-// relative rotation. The error is returned in angle axis form.
-Eigen::Vector3d ComputeRelativeRotationError(
-    const Eigen::Vector3d& relative_rotation,
-    const Eigen::Vector3d& rotation1,
-    const Eigen::Vector3d& rotation2) {
-  Eigen::Matrix3d relative_rotation_matrix, rotation_matrix1, rotation_matrix2;
-  ceres::AngleAxisToRotationMatrix(
-      relative_rotation.data(),
-      ceres::ColumnMajorAdapter3x3(relative_rotation_matrix.data()));
-  ceres::AngleAxisToRotationMatrix(
-      rotation1.data(), ceres::ColumnMajorAdapter3x3(rotation_matrix1.data()));
-  ceres::AngleAxisToRotationMatrix(
-      rotation2.data(), ceres::ColumnMajorAdapter3x3(rotation_matrix2.data()));
-
-  // Compute the relative rotation error.
-  const Eigen::Matrix3d relative_rotation_matrix_error =
-      rotation_matrix2.transpose() * relative_rotation_matrix *
-      rotation_matrix1;
-  Eigen::Vector3d relative_rotation_error;
-  ceres::RotationMatrixToAngleAxis(
-      ceres::ColumnMajorAdapter3x3(relative_rotation_matrix_error.data()),
-      relative_rotation_error.data());
-  return relative_rotation_error;
-}
-
-// Applies the rotation change to the rotation.
-void ApplyRotation(const Eigen::Vector3d& rotation_change,
-                   Eigen::Vector3d* rotation) {
-  // Convert to rotation matrices.
-  Eigen::Matrix3d rotation_change_matrix, rotation_matrix;
-  ceres::AngleAxisToRotationMatrix(
-      rotation_change.data(),
-      ceres::ColumnMajorAdapter3x3(rotation_change_matrix.data()));
-  ceres::AngleAxisToRotationMatrix(
-      rotation->data(), ceres::ColumnMajorAdapter3x3(rotation_matrix.data()));
-
-  // Apply the rotation change.
-  const Eigen::Matrix3d changed_rotation =
-      rotation_matrix * rotation_change_matrix;
-  // Convert back to angle axis.
-  ceres::RotationMatrixToAngleAxis(
-      ceres::ColumnMajorAdapter3x3(changed_rotation.data()), rotation->data());
-}
-
-}  // namespace
 
 bool RobustRotationEstimator::EstimateRotations(
     const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
     std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations) {
-  view_pairs_ = &view_pairs;
-  global_orientations_ = global_orientations;
+  for (const auto& view_pair : view_pairs) {
+    AddRelativeRotationConstraint(view_pair.first, view_pair.second.rotation_2);
+  }
+  return EstimateRotations(global_orientations);
+}
 
-  // Compute a mapping of view ids to indices in the linear system. One matrix
+void RobustRotationEstimator::AddRelativeRotationConstraint(
+    const ViewIdPair& view_id_pair, const Eigen::Vector3d& relative_rotation) {
+  // Store the relative orientation constraint.
+  relative_rotations_.emplace_back(view_id_pair, relative_rotation);
+}
+
+bool RobustRotationEstimator::EstimateRotations(
+    std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations) {
+  CHECK_GT(relative_rotations_.size(), 0)
+      << "Relative rotation constraints must be added to the robust rotation "
+         "solver before estimating global rotations.";
+  global_orientations_ = CHECK_NOTNULL(global_orientations);
+
+  // Compute a mapping of view ids to indices in the linear system. One rotation
   // will have an index of -1 and will not be added to the linear system. This
   // will remove the gauge freedom (effectively holding one camera as the
   // identity rotation).
@@ -134,8 +103,8 @@ void RobustRotationEstimator::SetupLinearSystem() {
   // The rotation change is one less than the number of global rotations because
   // we keep one rotation constant.
   rotation_change_.resize((global_orientations_->size() - 1) * 3);
-  relative_rotation_error_.resize(view_pairs_->size() * 3);
-  sparse_matrix_.resize(view_pairs_->size() * 3,
+  relative_rotation_error_.resize(relative_rotations_.size() * 3);
+  sparse_matrix_.resize(relative_rotations_.size() * 3,
                         (global_orientations_->size() - 1) * 3);
 
   // For each relative rotation constraint, add an entry to the sparse
@@ -144,9 +113,9 @@ void RobustRotationEstimator::SetupLinearSystem() {
   // matrices.
   int rotation_error_index = 0;
   std::vector<Eigen::Triplet<double> > triplet_list;
-  for (const auto& view_pair : *view_pairs_) {
+  for (const auto& relative_rotation : relative_rotations_) {
     const int view1_index =
-        FindOrDie(view_id_to_index_, view_pair.first.first);
+        FindOrDie(view_id_to_index_, relative_rotation.first.first);
     if (view1_index != kConstantRotationIndex) {
       triplet_list.emplace_back(3 * rotation_error_index,
                                 3 * view1_index,
@@ -160,7 +129,7 @@ void RobustRotationEstimator::SetupLinearSystem() {
     }
 
     const int view2_index =
-        FindOrDie(view_id_to_index_, view_pair.first.second);
+        FindOrDie(view_id_to_index_, relative_rotation.first.second);
     if (view2_index != kConstantRotationIndex) {
       triplet_list.emplace_back(3 * rotation_error_index + 0,
                                 3 * view2_index + 0,
@@ -182,12 +151,18 @@ void RobustRotationEstimator::SetupLinearSystem() {
 // orientation estimates.
 void RobustRotationEstimator::ComputeRotationError() {
   int rotation_error_index = 0;
-  for (const auto& view_pair : *view_pairs_) {
+  for (const auto& relative_rotation : relative_rotations_) {
+    const Eigen::Vector3d& relative_rotation_aa = relative_rotation.second;
+    const Eigen::Vector3d& rotation1 =
+        FindOrDie(*global_orientations_, relative_rotation.first.first);
+    const Eigen::Vector3d& rotation2 =
+        FindOrDie(*global_orientations_, relative_rotation.first.second);
+
+    // Compute the relative rotation error as:
+    //   R_err = R2^t * R_12 * R1.
     relative_rotation_error_.segment<3>(3 * rotation_error_index) =
-        ComputeRelativeRotationError(
-            view_pair.second.rotation_2,
-            FindOrDie(*global_orientations_, view_pair.first.first),
-            FindOrDie(*global_orientations_, view_pair.first.second));
+        MultiplyRotations(-rotation2,
+                          MultiplyRotations(relative_rotation_aa, rotation1));
     ++rotation_error_index;
   }
 }
@@ -226,7 +201,7 @@ void RobustRotationEstimator::UpdateGlobalRotations() {
     // Apply the rotation change to the global orientation.
     const Eigen::Vector3d& rotation_change =
         rotation_change_.segment<3>(3 * view_index);
-    ApplyRotation(rotation_change, &rotation.second);
+    rotation.second = MultiplyRotations(rotation.second, rotation_change);
   }
 }
 

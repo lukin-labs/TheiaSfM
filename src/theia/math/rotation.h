@@ -1,4 +1,4 @@
-// Copyright (C) 2014 The Regents of the University of California (Regents).
+// Copyright (C) 2017 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,32 +32,18 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include <ceres/rotation.h>
-#include <Eigen/Core>
-#include <glog/logging.h>
-#include <algorithm>
+#ifndef THEIA_MATH_ROTATION_H_
+#define THEIA_MATH_ROTATION_H_
 
-#include "theia/sfm/camera/camera.h"
-#include "theia/sfm/twoview_info.h"
+#include <Eigen/Core>
 
 namespace theia {
 
-void SwapCameras(TwoViewInfo* twoview_info) {
-  CHECK_NE(twoview_info->focal_length_1, 0.0);
-  CHECK_NE(twoview_info->focal_length_2, 0.0);
-
-  // Swap the focal lengths.
-  std::swap(twoview_info->focal_length_1, twoview_info->focal_length_2);
-
-  // Invert the translation.
-  Eigen::Matrix3d rotation_mat;
-  ceres::AngleAxisToRotationMatrix(
-      twoview_info->rotation_2.data(),
-      ceres::ColumnMajorAdapter3x3(rotation_mat.data()));
-  twoview_info->position_2 = -rotation_mat * twoview_info->position_2;
-
-  // Invert the rotation.
-  twoview_info->rotation_2 *= -1.0;
-}
-
+// Multiply two angle-axis rotations without having to form the rotation
+// matrices. Given the corresponding rotation matrices R1 and R2, this method
+// computes: R3 = R1 * R2.
+Eigen::Vector3d MultiplyRotations(const Eigen::Vector3d& rotation1,
+                                  const Eigen::Vector3d& rotation2);
 }  // namespace theia
+
+#endif  // THEIA_MATH_ROTATION_H_

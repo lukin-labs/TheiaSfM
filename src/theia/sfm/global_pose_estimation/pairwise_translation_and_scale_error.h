@@ -43,13 +43,19 @@ class CostFunction;
 
 namespace theia {
 
-// Computes the error between a translation direction and the direction formed
-// from two positions such that (c_j - c_i) - scalar * t_ij is
-// minimized. Additionally, there is a penalty on the scale to ensure it is
-// greater than 1.0.
+// Computes the error between a scaled translation direction and the direction
+// formed from two positions such that
+//
+//   (c_j - c_i) - s * R_i^t * t_ij
+//
+// is minimized where c_i, c_j are the unknown global camera positions, t_ij is
+// the relative translation in a local coordinate system, R_i is the rotation
+// from the global coordinate system to the local coordinate system, and s is
+// the unknown scale of the local coordinate system.
 struct PairwiseTranslationAndScaleError {
   PairwiseTranslationAndScaleError(
-      const Eigen::Vector3d& translation_direction);
+      const Eigen::Vector3d& orientation1,
+      const Eigen::Vector3d& relative_translation);
 
   // The error is given by the position error described above.
   template <typename T>
@@ -58,10 +64,12 @@ struct PairwiseTranslationAndScaleError {
                   const T* scale,
                   T* residuals) const;
 
+  // Create the ceres cost function.
   static ceres::CostFunction* Create(
-      const Eigen::Vector3d& translation_direction);
+      const Eigen::Vector3d& orientation1,
+      const Eigen::Vector3d& relative_translation);
 
-  const Eigen::Vector3d translation_direction_;
+  Eigen::Vector3d relative_translation_;
 };
 
 template <typename T>
@@ -69,20 +77,12 @@ bool PairwiseTranslationAndScaleError::operator() (const T* position1,
                                                    const T* position2,
                                                    const T* scale,
                                                    T* residuals) const {
-  static const T kVeryLargeNumber = T(1e24);
-
   residuals[0] =
-      position2[0] - position1[0] - scale[0] * translation_direction_[0];
+      position2[0] - position1[0] - scale[0] * relative_translation_[0];
   residuals[1] =
-      position2[1] - position1[1] - scale[0] * translation_direction_[1];
+      position2[1] - position1[1] - scale[0] * relative_translation_[1];
   residuals[2] =
-      position2[2] - position1[2] - scale[0] * translation_direction_[2];
-  // Penalize the scale as it approaches 1.0.
-  if (scale[0] <= T(1.0)) {
-    residuals[3] = kVeryLargeNumber;
-  } else {
-    residuals[3] = 1.0 / (scale[0] - 1.0);
-  }
+      position2[2] - position1[2] - scale[0] * relative_translation_[2];
   return true;
 }
 
