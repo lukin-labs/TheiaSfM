@@ -75,7 +75,7 @@ endif (EXISTS ${LOCAL_GIT_DIRECTORY})
 # ==============================================================================
 # Additional cmake find modules
 # ==============================================================================
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 option(BUILD_TESTING "Enable testing" ON)
 option(BUILD_DOCUMENTATION "Build html User's Guide" OFF)
@@ -263,8 +263,8 @@ install(DIRECTORY src/theia/ DESTINATION include/theia FILES_MATCHING PATTERN "*
 install(DIRECTORY libraries/ DESTINATION include/theia/libraries FILES_MATCHING PATTERN "*.h*")
 
 # Add an uninstall target to remove all installed files.
-configure_file("${CMAKE_SOURCE_DIR}/cmake/uninstall.cmake.in"
-               "${CMAKE_BINARY_DIR}/cmake/uninstall.cmake"
+configure_file("${PROJECT_SOURCE_DIR}/cmake/uninstall.cmake.in"
+               "${PROJECT_BINARY_DIR}/cmake/uninstall.cmake"
                IMMEDIATE @ONLY)
 
 #TODO (uninstall):
@@ -305,14 +305,14 @@ file(RELATIVE_PATH INSTALL_ROOT_REL_CONFIG_INSTALL_DIR
 # Create a TheiaConfig.cmake file. <name>Config.cmake files are searched by
 # FIND_PACKAGE() automatically. We configure that file so that we can put any
 # information we want in it, e.g. version numbers, include directories, etc.
-configure_file("${CMAKE_SOURCE_DIR}/cmake/TheiaConfig.cmake.in"
+configure_file("${PROJECT_SOURCE_DIR}/cmake/TheiaConfig.cmake.in"
                "${CMAKE_CURRENT_BINARY_DIR}/TheiaConfig.cmake" @ONLY)
 
 # Additionally, when CMake has found a TheiaConfig.cmake, it can check for a
 # TheiaConfigVersion.cmake in the same directory when figuring out the version
 # of the package when a version has been specified in the FIND_PACKAGE() call,
 # e.g. FIND_PACKAGE(Theia [0.5.2] REQUIRED). The version argument is optional.
-configure_file("${CMAKE_SOURCE_DIR}/cmake/TheiaConfigVersion.cmake.in"
+configure_file("${PROJECT_SOURCE_DIR}/cmake/TheiaConfigVersion.cmake.in"
                "${CMAKE_CURRENT_BINARY_DIR}/TheiaConfigVersion.cmake" @ONLY)
 
 # Install these files into the same directory as the generated exports-file,
